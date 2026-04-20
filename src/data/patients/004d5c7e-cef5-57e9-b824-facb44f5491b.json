@@ -1,0 +1,68 @@
+{
+  "id": "004d5c7e-cef5-57e9-b824-facb44f5491b",
+  "data": {
+    "Patient_ID": "004d5c7e-cef5-57e9-b824-facb44f5491b",
+    "Patient_Summary": "Female patient born on January 27, 2094, has a history of systemic lupus erythematosus (SLE) with multiple flare-ups. Currently management includes immunosuppressants. Looking for clinical trials related to new SLE therapies.",
+    "summary": "Female patient born on January 27, 2094, has a history of systemic lupus erythematosus (SLE)...",
+    "Trials": [
+      {
+        "Trail_ID": "NCT01520155",
+        "Relevance_Reasoning": "The patient has a confirmed history of systemic lupus erythematosus which matches the target population for this trial focused on SLE drug efficacy.",
+        "Eligibility_Reasoning": "The patient meets the primary inclusion criterion of having a documented diagnosis of SLE for at least 6 months.",
+        "Predicted_Labels": "eligible",
+        "Matching_Results": {
+          "inclusion": [
+            {
+              "LLM_Call_ID": "0",
+              "LLM_Reasoning": "The patient has been diagnosed with systemic lupus erythematosus as documented in their history.",
+              "LLM_output": "included"
+            },
+            {
+              "LLM_Call_ID": "1",
+              "LLM_Reasoning": "Patient age is within the required range of 18 to 75 years.",
+              "LLM_output": "included"
+            }
+          ],
+          "exclusion": [
+            {
+              "LLM_Call_ID": "0",
+              "LLM_Reasoning": "The patient does not have a history of major organ transplant, which would be an exclusionary factor.",
+              "LLM_output": "not applicable"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "comments": {
+    "Trials": [
+      {
+        "trial_index": 0,
+        "trial_fields": {
+          "Relevance_Reasoning": {
+            "comment": "",
+            "status": "resolved"
+          },
+          "Eligibility_Reasoning": {
+            "comment": "hjhbj",
+            "status": "resolved"
+          }
+        },
+        "inclusion": [
+          {
+            "item_index": 0,
+            "fields": {
+              "LLM_output": {
+                "comment": "",
+                "status": "resolved"
+              }
+            }
+          }
+        ],
+        "exclusion": []
+      }
+    ]
+  },
+  "has_review_requests": false,
+  "summary": "Female patient with history of Systemic Lupus Erythematosus (SLE)"
+}

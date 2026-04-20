@@ -1,0 +1,59 @@
+.commentBoxContainer {
+  margin-top: var(--space-md);
+  background: var(--background);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.commentFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.commentFormGroup textarea {
+  background: white;
+  min-height: 80px;
+}
+
+.commentControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.statusSelectorWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.statusSelectorWrapper select {
+  max-width: 160px;
+  padding: 4px 8px;
+}
+
+.saveBtn {
+  padding: 6px 16px;
+  background: var(--divider);
+  color: var(--text-soft);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.saveBtn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.saveBtn.active:hover {
+  background: var(--primary-hover);
+}

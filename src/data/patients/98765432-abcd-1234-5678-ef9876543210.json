@@ -1,0 +1,47 @@
+{
+  "id": "98765432-abcd-1234-5678-ef9876543210",
+  "data": {
+    "Patient_ID": "98765432-abcd-1234-5678-ef9876543210",
+    "Patient_Summary": "Male patient, 45, type 2 diabetes diagnosed 5 years ago. Currently on metformin. No history of cardiovascular complications.",
+    "summary": "Male patient, 45, type 2 diabetes...",
+    "Trials": [
+      {
+        "Trail_ID": "NCT09999999",
+        "Relevance_Reasoning": "Patient has type 2 diabetes which matches the core study population.",
+        "Eligibility_Reasoning": "Patient meets the age and diagnosis duration requirements.",
+        "Predicted_Labels": "eligible",
+        "Matching_Results": {
+          "inclusion": [
+            {
+              "LLM_Call_ID": "0",
+              "LLM_Reasoning": "Confirmed diagnosis of Type 2 Diabetes.",
+              "LLM_output": "included"
+            }
+          ],
+          "exclusion": []
+        }
+      }
+    ]
+  },
+  "comments": {
+    "Trials": [
+      {
+        "trial_index": 0,
+        "trial_fields": {
+          "Relevance_Reasoning": {
+            "comment": "",
+            "status": "needs_review"
+          },
+          "Eligibility_Reasoning": {
+            "comment": "",
+            "status": "resolved"
+          }
+        },
+        "inclusion": [],
+        "exclusion": []
+      }
+    ]
+  },
+  "has_review_requests": true,
+  "summary": "Male patient with Type 2 Diabetes"
+}

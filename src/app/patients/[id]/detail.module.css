@@ -1,0 +1,141 @@
+.patientDetail {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--divider);
+  padding-bottom: var(--space-lg);
+}
+
+.headerInfo h1 {
+  font-family: inherit;
+  color: var(--text-dark);
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.summaryCard {
+  border-left: 4px solid var(--primary);
+  background: white;
+}
+
+.summaryCard h3 {
+  font-size: 0.875rem;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.trialBlock {
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--divider);
+}
+
+.trialHeader {
+  margin-bottom: var(--space-lg);
+}
+
+.trialHeader h2 {
+  font-size: 1.5rem;
+  color: var(--text-dark);
+  margin-bottom: var(--space-xs);
+}
+
+.fieldsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.fieldSection {
+  background: white;
+  border-radius: var(--radius-md);
+}
+
+.fieldSection h4 {
+  font-size: 0.875rem;
+  color: var(--text-soft);
+  margin-bottom: var(--space-sm);
+}
+
+.originalVal {
+  background: var(--background);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.criteriaList {
+  margin-top: var(--space-xl);
+}
+
+.criteriaList h3 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-lg);
+}
+
+.criteriaItem {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-md);
+  background: white;
+  border-radius: var(--radius-md);
+}
+
+.criteriaContent strong {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.criteriaContent p {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.primaryBtn {
+  background: var(--primary);
+  color: white;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.primaryBtn:hover {
+  background: var(--primary-hover);
+}
+
+.secondaryBtn {
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.secondaryBtn:hover {
+  background: var(--background);
+  border-color: var(--text-muted);
+}
