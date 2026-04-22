@@ -1,8 +1,14 @@
 export type ReviewStatus = 'draft' | 'needs_review' | 'resolved';
 
-export interface PatientComment {
-  comment: string;
+export interface CommentEntry {
+  text: string;
   status: ReviewStatus;
+  timestamp: string;
+}
+
+export interface PatientComment {
+  entries: CommentEntry[];
+  current_status: ReviewStatus;
 }
 
 export interface TrialComments {
@@ -32,4 +38,5 @@ export interface PatientSummary {
   id: string;
   summary: string;
   has_review_requests: boolean;
+  is_commented?: boolean;
 }

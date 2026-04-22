@@ -20,7 +20,7 @@ export default function StatusIndicator({ status, showText = true }: StatusIndic
     switch (status) {
       case 'draft': return 'Draft';
       case 'needs_review': return 'Needs Review';
-      case 'resolved': return 'Resolved';
+      case 'resolved': return 'Clean';
       default: return 'Unknown';
     }
   };
@@ -29,11 +29,12 @@ export default function StatusIndicator({ status, showText = true }: StatusIndic
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
       <span 
         style={{ 
-          width: '8px', 
-          height: '8px', 
+          width: '10px', 
+          height: '10px', 
           borderRadius: '50%', 
           backgroundColor: getStatusColor(),
-          border: '1px solid rgba(0,0,0,0.05)'
+          border: '1px solid rgba(0,0,0,0.05)',
+          boxShadow: '0 0 0 2px white, 0 0 0 3px rgba(0,0,0,0.05)'
         }} 
       />
       {showText && (

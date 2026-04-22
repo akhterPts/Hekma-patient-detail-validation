@@ -9,13 +9,13 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     
-    const success = updatePatientComments(id, body);
+    const updatedPatient = await updatePatientComments(id, body);
     
-    if (!success) {
+    if (!updatedPatient) {
       return NextResponse.json({ error: 'Failed to update comments or patient not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ status: 'updated' });
+    return NextResponse.json(updatedPatient);
   } catch (error) {
     console.error('Update comments error:', error);
     return NextResponse.json({ error: 'Failed to update comments' }, { status: 500 });

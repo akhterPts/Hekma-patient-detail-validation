@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const finalJson = getFinalJson(id);
+    const finalJson = await getFinalJson(id);
     
     if (!finalJson) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 });

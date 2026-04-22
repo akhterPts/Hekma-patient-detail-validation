@@ -3,7 +3,7 @@ import { getAllPatients } from '@/lib/patient-storage';
 
 export async function GET() {
   try {
-    const patients = getAllPatients();
+    const patients = await getAllPatients();
     return NextResponse.json(patients);
   } catch (error) {
     console.error('List error:', error);

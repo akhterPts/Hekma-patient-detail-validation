@@ -20,31 +20,45 @@ export default function PatientList() {
           <h1>Patient Records</h1>
           <p style={{ color: 'var(--text-soft)', fontSize: '0.875rem' }}>Full Validation Overview</p>
         </div>
-        <Link href="/upload" className={styles.uploadBtn}>Upload New Patient</Link>
       </div>
 
       <div className={styles.patientGrid}>
         {patients.length === 0 ? (
           <div className="card" style={{ gridColumn: '1 / -1', padding: 'var(--space-xl)', textAlign: 'center' }}>
-            <p style={{ color: 'var(--text-muted)' }}>No patients found. Please upload a dataset to begin.</p>
+            <p style={{ color: 'var(--text-muted)' }}>No records found in the Hekma Vault.</p>
           </div>
         ) : (
           patients.map(p => (
             <div key={p.id} className={styles.patientCard}>
               <div className={styles.cardHeader}>
-                <span className={styles.patientId}>ID: {p.id.slice(0, 8)}...</span>
-                <StatusIndicator 
-                  status={p.has_review_requests ? 'needs_review' : 'resolved'} 
-                  showText={false} 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span className={styles.patientId}>ID: {p.id}</span>
+                  {p.is_commented && (
+                    <span style={{
+                      fontSize: '0.7rem',
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                      color: '#10b981',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: 600,
+                      width: 'fit-content'
+                    }}>
+                      COMMENTED
+                    </span>
+                  )}
+                </div>
+                <StatusIndicator
+                  status={p.has_review_requests ? 'needs_review' : 'resolved'}
+                  showText={false}
                 />
               </div>
-              
+
               <p className={styles.patientSummary}>{p.summary}</p>
-              
+
               <div className={styles.cardFooter}>
-                <StatusIndicator 
-                  status={p.has_review_requests ? 'needs_review' : 'resolved'} 
-                  showText={true} 
+                <StatusIndicator
+                  status={p.has_review_requests ? 'needs_review' : 'resolved'}
+                  showText={true}
                 />
                 <Link href={`/patients/${p.id}`} className={styles.viewBtn}>
                   Review Details →

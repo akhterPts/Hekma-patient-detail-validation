@@ -6,6 +6,7 @@ interface Patient {
   id: string;
   summary: string;
   has_review_requests: boolean;
+  is_commented?: boolean;
   data: any;
   comments: any;
 }

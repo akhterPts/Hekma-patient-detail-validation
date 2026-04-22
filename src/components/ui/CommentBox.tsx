@@ -1,80 +1,157 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ReviewStatus, PatientComment } from '@/types/patient';
-import StatusIndicator from './StatusIndicator';
+import { ReviewStatus, PatientComment, CommentEntry } from '@/types/patient';
+import styles from './CommentBox.module.css';
 
 interface CommentBoxProps {
   initialComment: PatientComment;
-  onSave: (comment: string, status: ReviewStatus) => void;
+  onSave: (comment: string, status: ReviewStatus, isUpdate: boolean) => void;
   label?: string;
+  fieldId: string;
 }
 
-import styles from './CommentBox.module.css';
-
 export default function CommentBox({ initialComment, onSave, label }: CommentBoxProps) {
-  const [comment, setComment] = useState(initialComment.comment || '');
-  const [status, setStatus] = useState<ReviewStatus>(initialComment.status || 'draft');
-  const [isModified, setIsModified] = useState(false);
+  // Compatibility Layer
+  const legacyComment = (initialComment as any).comment;
+  const legacyStatus = (initialComment as any).status;
+  
+  let initialEntries = initialComment.entries || [];
+  let statusAtLoad = initialComment.current_status || legacyStatus || 'draft';
 
-  useEffect(() => {
-    setComment(initialComment.comment || '');
-    setStatus(initialComment.status || 'draft');
-  }, [initialComment]);
+  if (initialEntries.length === 0 && legacyComment) {
+    initialEntries = [{
+      text: legacyComment,
+      status: statusAtLoad,
+      timestamp: new Date().toISOString()
+    }];
+  }
 
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newVal = e.target.value;
-    setComment(newVal);
-    
-    // CRITICAL RULE: Reset to "draft" on edit
-    if (newVal !== initialComment.comment) {
-      setStatus('draft');
-      setIsModified(true);
+  const entries = initialEntries;
+  const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+
+  // RULES:
+  // - Pencil (Update): Only for the latest entry if it is NOT resolved.
+  // - Plus (Add): For empty fields OR when the latest entry IS resolved.
+  const hasActiveIssue = latestEntry && latestEntry.status !== 'resolved';
+  const isLatestResolved = latestEntry?.status === 'resolved';
+
+  const showPencil = !!hasActiveIssue;
+  const showPlus = !latestEntry || isLatestResolved;
+
+  const [newComment, setNewComment] = useState('');
+  const [currentStatus, setCurrentStatus] = useState<ReviewStatus>(statusAtLoad);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Sync state when entering Edit vs Add mode
+  const enterEditMode = () => {
+    if (latestEntry) {
+      setNewComment(latestEntry.text);
+      setCurrentStatus(latestEntry.status);
+    }
+    setIsExpanded(true);
+  };
+
+  const enterAddMode = () => {
+    setNewComment('');
+    setCurrentStatus('draft');
+    setIsExpanded(true);
+  };
+
+  const handleUpdate = () => {
+    if (newComment.trim() || currentStatus !== statusAtLoad) {
+      onSave(newComment, currentStatus, showPencil); // isUpdate = showPencil
+      setNewComment('');
+      setIsExpanded(false);
     }
   };
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as ReviewStatus;
-    setStatus(newStatus);
-    setIsModified(true);
-  };
 
-  const handleSave = () => {
-    onSave(comment, status);
-    setIsModified(false);
+  const getStatusClass = (status: ReviewStatus) => {
+    switch (status) {
+      case 'draft': return styles.statusDraft;
+      case 'needs_review': return styles.statusReview;
+      case 'resolved': return styles.statusResolved;
+      default: return '';
+    }
   };
 
   return (
-    <div className={styles.commentBoxContainer}>
-      {label && <label className="input-label">{label}</label>}
-      
-      <div className={styles.commentFormGroup}>
-        <textarea
-          value={comment}
-          onChange={handleCommentChange}
-          placeholder="Add your validation notes here..."
-          rows={3}
-        />
-        
-        <div className={styles.commentControls}>
-          <div className={styles.statusSelectorWrapper}>
-            <label className="input-label" style={{ marginBottom: 0 }}>Status:</label>
-            <select value={status} onChange={handleStatusChange}>
-              <option value="draft">Draft</option>
-              <option value="needs_review">Needs Review</option>
-              <option value="resolved">Resolved</option>
-            </select>
-          </div>
-          
-          <button 
-            className={`${styles.saveBtn} ${isModified ? styles.active : ''}`}
-            onClick={handleSave}
-            disabled={!isModified}
-          >
-            Update
-          </button>
+    <div className={styles.threadWrapper}>
+      {/* 1. Persistent Thread History */}
+      {entries.length > 0 && (
+        <div className={styles.commentList}>
+          {entries.map((entry, idx) => (
+            <div key={idx} className={`${styles.commentItem} ${getStatusClass(entry.status)}`}>
+              <div className={styles.itemHeader}>
+                <span className={styles.itemStatusLabel}>{entry.status.replace('_', ' ')}</span>
+                <span className={styles.itemDate}>
+                  {new Date(entry.timestamp).toLocaleDateString()} at {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <p className={styles.itemText}>{entry.text}</p>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {/* 2. Toggleable Action Area */}
+      {!isExpanded ? (
+        <div className={styles.collapsedWrapper}>
+          {(showPlus || showPencil) && (
+            <button 
+              className={showPencil ? styles.pencilBtn : styles.plusBtn}
+              onClick={showPencil ? enterEditMode : enterAddMode}
+            >
+              {showPencil ? '✎' : '+'}
+              <span>{showPencil ? 'Edit Latest Comment' : 'Add New Comment'}</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className={`${styles.commentBoxContainer} ${getStatusClass(currentStatus)}`}>
+          <div className={styles.header}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={styles.label}>{showPencil ? 'Modifying Observation' : 'New Clinical Entry'}</span>
+              <button className={styles.closeBtn} onClick={() => setIsExpanded(false)}>✕</button>
+            </div>
+            <div className={styles.statusButtons}>
+              {(['draft', 'needs_review', 'resolved'] as ReviewStatus[]).map((s) => (
+                <button 
+                  key={s}
+                  type="button"
+                  className={`${styles.statusBtn} ${currentStatus === s ? styles[`${s}Active`] || styles[`${s.replace('_', 'R')}Active`] : ''} ${s === 'needs_review' && currentStatus === 'needs_review' ? styles.needsReviewActive : ''}`}
+                  onClick={() => setCurrentStatus(s)}
+                >
+                  {s.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder={showPencil ? "Update your observation..." : "Start a new clinical note..."}
+              rows={2}
+              autoFocus
+            />
+            <div className={styles.actionRow}>
+              <button className={styles.cancelBtn} onClick={() => setIsExpanded(false)}>
+                Cancel
+              </button>
+              <button 
+                className={styles.updateBtn} 
+                onClick={handleUpdate}
+                disabled={!newComment.trim() && currentStatus === statusAtLoad}
+              >
+                {showPencil ? 'Save Changes' : 'Post to Thread'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

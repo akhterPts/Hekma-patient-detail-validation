@@ -1,111 +1,103 @@
-import fs from 'fs';
-import path from 'path';
-import { PatientData, PatientSummary, TrialComments } from '@/types/patient';
+import { PatientData, PatientSummary } from '@/types/patient';
 
-const DATA_DIR = path.join(process.cwd(), 'src/data/patients');
+const API_BASE = 'https://gpt-api.hekma.ai/api/annotations';
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-export function savePatient(patient: PatientData): void {
-  const filePath = path.join(DATA_DIR, `${patient.id}.json`);
-  fs.writeFileSync(filePath, JSON.stringify(patient, null, 2));
-}
-
-export function getPatient(id: string): PatientData | null {
-  const filePath = path.join(DATA_DIR, `${id}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(content);
-}
-
-export function getAllPatients(): PatientSummary[] {
-  const files = fs.readdirSync(DATA_DIR);
-  return files
-    .filter(file => file.endsWith('.json'))
-    .map(file => {
-      const content = fs.readFileSync(path.join(DATA_DIR, file), 'utf-8');
-      const patient: PatientData = JSON.parse(content);
-      return {
-        id: patient.id,
-        summary: patient.summary,
-        has_review_requests: patient.has_review_requests,
-      };
+export async function getPatient(id: string): Promise<PatientData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/patients/${id}`, {
+      headers: {
+        'accept': 'application/json'
+      },
+      cache: 'no-store' // Ensure real-time data
     });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to fetch patient ${id} from API:`, error);
+    return null;
+  }
 }
 
-export function updatePatientComments(id: string, update: {
+export async function getAllPatients(): Promise<PatientSummary[]> {
+  try {
+    const response = await fetch(`${API_BASE}/patients`, {
+      headers: {
+        'accept': 'application/json'
+      },
+      cache: 'no-store' // Ensure real-time data
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch patients from API:', error);
+    return [];
+  }
+}
+
+export async function updatePatientComments(id: string, update: {
   trial_index: number;
   type: 'trial_fields' | 'inclusion' | 'exclusion';
   item_index?: number;
   fields: any;
-}): boolean {
-  const patient = getPatient(id);
-  if (!patient) return false;
+}): Promise<PatientData | null> {
+  try {
+    // Push update to API
+    const response = await fetch(`${API_BASE}/patients/${id}/comments`, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(update)
+    });
 
-  const { trial_index, type, item_index, fields } = update;
-  let trial = patient.comments.Trials.find(t => t.trial_index === trial_index);
-
-  if (!trial) {
-    trial = {
-      trial_index,
-      trial_fields: {},
-      inclusion: [],
-      exclusion: [],
-    };
-    patient.comments.Trials.push(trial);
-  }
-
-  if (type === 'trial_fields') {
-    trial.trial_fields = { ...trial.trial_fields, ...fields };
-  } else if (type === 'inclusion' || type === 'exclusion') {
-    let item = trial[type].find(i => i.item_index === item_index);
-    if (!item) {
-      item = { item_index: item_index!, fields: {} };
-      trial[type].push(item);
+    if (!response.ok) {
+      throw new Error(`Failed to push comments: ${response.statusText}`);
     }
-    item.fields = { ...item.fields, ...fields };
+
+    // Return the updated patient data from the API
+    // The API returns the updated patient object directly
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to push comments for patient ${id} to API:`, error);
+    return null;
   }
-
-  // Recompute has_review_requests
-  patient.has_review_requests = patient.comments.Trials.some(t => {
-    const trialFieldsReview = Object.values(t.trial_fields).some(f => f.status === 'needs_review');
-    const inclusionReview = t.inclusion.some(i => Object.values(i.fields).some(f => f.status === 'needs_review'));
-    const exclusionReview = t.exclusion.some(e => Object.values(e.fields).some(f => f.status === 'needs_review'));
-    return trialFieldsReview || inclusionReview || exclusionReview;
-  });
-
-  savePatient(patient);
-  return true;
 }
 
-export function getFinalJson(id: string): any | null {
-  const patient = getPatient(id);
+export async function getFinalJson(id: string): Promise<any | null> {
+  const patient = await getPatient(id);
   if (!patient) return null;
 
   const finalJson = JSON.parse(JSON.stringify(patient.data));
-  const patientId = finalJson.Patient_ID;
+  
+  if (!patient.comments || !patient.comments.Trials) return finalJson;
 
   patient.comments.Trials.forEach(trialComment => {
-    const trial = finalJson.Trials.find((t: any) => t.Trail_ID || t.Trial_ID === trialComment.trial_index); 
-    // Note: The PDF has Trail_ID in some places and Trial_ID in others. I'll need to be flexible.
-    // Actually, the sample code in PDF uses trial_index to find it.
-    
     const targetTrial = finalJson.Trials[trialComment.trial_index];
     if (!targetTrial) return;
 
     // Inject trial level comments
-    Object.entries(trialComment.trial_fields).forEach(([field, data]) => {
-      targetTrial[`${field}_comments`] = data.comment;
+    Object.entries(trialComment.trial_fields).forEach(([field, data]: [string, any]) => {
+      const latest = data.entries?.[data.entries.length - 1];
+      targetTrial[`${field}_comments`] = latest?.text || '';
+      targetTrial[`${field}_status`] = data.current_status;
     });
 
     // Inject inclusion comments
     trialComment.inclusion.forEach(incComment => {
       const incItem = targetTrial.Matching_Results.inclusion[incComment.item_index];
       if (incItem) {
-        Object.entries(incComment.fields).forEach(([field, data]) => {
-          incItem[`${field}_comments`] = data.comment;
+        Object.entries(incComment.fields).forEach(([field, data]: [string, any]) => {
+          const latest = data.entries?.[data.entries.length - 1];
+          incItem[`${field}_comments`] = latest?.text || '';
         });
       }
     });
@@ -114,8 +106,9 @@ export function getFinalJson(id: string): any | null {
     trialComment.exclusion.forEach(excComment => {
       const excItem = targetTrial.Matching_Results.exclusion[excComment.item_index];
       if (excItem) {
-        Object.entries(excComment.fields).forEach(([field, data]) => {
-          excItem[`${field}_comments`] = data.comment;
+        Object.entries(excComment.fields).forEach(([field, data]: [string, any]) => {
+          const latest = data.entries?.[data.entries.length - 1];
+          excItem[`${field}_comments`] = latest?.text || '';
         });
       }
     });
