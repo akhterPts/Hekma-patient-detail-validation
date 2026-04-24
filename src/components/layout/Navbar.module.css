@@ -48,3 +48,20 @@
   transform: none;
   box-shadow: none;
 }
+
+.secondaryBtn {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.secondaryBtn:hover {
+  background: var(--surface-alt);
+  border-color: var(--primary);
+  color: var(--primary);
+}

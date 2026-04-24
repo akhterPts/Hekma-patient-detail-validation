@@ -15,19 +15,25 @@
   color: var(--text-dark);
 }
 
-.uploadBtn {
-  background: var(--primary);
-  color: white;
+.downloadBtn {
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-weight: 600;
-  text-decoration: none;
+  cursor: pointer;
   transition: var(--transition);
 }
 
-.uploadBtn:hover {
-  background: var(--primary-hover);
+.downloadBtn:hover:not(:disabled) {
+  background: var(--primary-soft);
   transform: translateY(-1px);
+}
+
+.downloadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .patientGrid {

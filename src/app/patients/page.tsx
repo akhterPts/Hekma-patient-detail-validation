@@ -9,6 +9,31 @@ import styles from './patients.module.css';
 
 export default function PatientList() {
   const { patients, loading, error } = usePatients();
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
+  const handleDownloadAll = async () => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch('/api/patients/export-all');
+      if (!response.ok) throw new Error('Failed to export all data');
+      
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hekma_full_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to download full export.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   if (loading) return <div>Synchronizing Vault Data...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -20,6 +45,13 @@ export default function PatientList() {
           <h1>Patient Records</h1>
           <p style={{ color: 'var(--text-soft)', fontSize: '0.875rem' }}>Full Validation Overview</p>
         </div>
+        <button 
+          onClick={handleDownloadAll} 
+          className={styles.downloadBtn}
+          disabled={isDownloading || patients.length === 0}
+        >
+          {isDownloading ? 'Preparing Export...' : 'Download Full JSON (All)'}
+        </button>
       </div>
 
       <div className={styles.patientGrid}>

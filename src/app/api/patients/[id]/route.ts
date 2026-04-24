@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPatient } from '@/lib/patient-storage';
 
 export async function GET(
   request: NextRequest,
@@ -7,15 +6,25 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const patient = await getPatient(id);
-    
-    if (!patient) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    const response = await fetch(`https://gpt-api.hekma.ai/api/annotations/patients/${id}`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      }
+      throw new Error(`External API responded with ${response.status}`);
     }
 
+    const patient = await response.json();
     return NextResponse.json(patient);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Detail error:', error);
-    return NextResponse.json({ error: 'Failed to get patient detail' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

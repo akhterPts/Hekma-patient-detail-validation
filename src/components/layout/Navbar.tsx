@@ -41,6 +41,9 @@ export default function Navbar() {
       </div>
       
       <div className={styles.navActions}>
+        <a href="/upload" className={styles.secondaryBtn}>
+          Bulk Upload
+        </a>
         {showGlobalSave && (
           <button 
             onClick={onGlobalSave} 

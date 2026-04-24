@@ -1,0 +1,140 @@
+.uploadContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+  padding: var(--space-xl);
+}
+
+.uploadCard {
+  max-width: 500px;
+  width: 100%;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.header p {
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
+
+.dropZone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  cursor: pointer;
+  transition: var(--transition);
+  background: rgba(0,0,0,0.02);
+}
+
+.dropZone:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.hasFile {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+}
+
+.prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prompt span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileName {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.fileSize {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.actions button {
+  flex: 1;
+}
+
+.primaryBtn {
+  background: var(--primary);
+  color: white;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  background: white;
+  color: var(--text-soft);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cancelBtn:hover {
+  background: var(--surface-alt);
+}
+
+.errorMsg {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.successMsg {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}

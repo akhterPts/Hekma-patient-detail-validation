@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinalJson } from '@/lib/patient-storage';
 
 export async function GET(
   request: NextRequest,
@@ -7,15 +6,25 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const finalJson = await getFinalJson(id);
-    
-    if (!finalJson) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    const response = await fetch(`https://gpt-api.hekma.ai/api/annotations/patients/${id}/final-json`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      }
+      throw new Error(`External API responded with ${response.status}`);
     }
 
+    const finalJson = await response.json();
     return NextResponse.json(finalJson);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Final JSON error:', error);
-    return NextResponse.json({ error: 'Failed to generate final JSON' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
