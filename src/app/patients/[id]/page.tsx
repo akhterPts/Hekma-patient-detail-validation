@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PatientData, PatientComment, ReviewStatus } from '@/types/patient';
 import CommentBox from '@/components/ui/CommentBox';
@@ -12,31 +12,54 @@ import styles from './detail.module.css';
 export default function PatientDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { patients, updatePatientState, getPatientById } = usePatients();
+  const { 
+    patients, 
+    updatePatientState, 
+    getPatientById,
+    pendingUpdates,
+    trackPendingUpdate,
+    expandedFields,
+    handleToggleExpand,
+    handleGlobalSave,
+    isSavingAll,
+    clearValidationState
+  } = usePatients();
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const p = getPatientById(id as string);
-    // Only use cached patient if it has the full data object
-    if (p && p.data && p.comments) {
-      setPatient(p);
+  const isCommented = patient?.comments?.Trials?.length > 0;
+
+  const loadPatientData = useCallback(async (forceFetch = false) => {
+    if (!forceFetch) {
+      const p = getPatientById(id as string);
+      if (p && p.data && p.comments) {
+        setPatient(p);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/patients/${id}`);
+      const data = await res.json();
+      setPatient(data);
+      updatePatientState(id as string, data);
+    } catch (err) {
+      console.error('Fetch error:', err);
+    } finally {
       setLoading(false);
-    } else {
-      setLoading(true);
-      fetch(`/api/patients/${id}`)
-        .then(res => res.json())
-        .then(data => {
-          setPatient(data);
-          updatePatientState(id as string, data);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Fetch error:', err);
-          setLoading(false);
-        });
     }
   }, [id, getPatientById, updatePatientState]);
+
+  useEffect(() => {
+    loadPatientData();
+  }, [loadPatientData]);
+
+  // Clean validation state on unmount or patient change
+  useEffect(() => {
+    return () => clearValidationState();
+  }, [id, clearValidationState]);
 
   const handleUpdateComment = async (update: any) => {
     try {
@@ -47,9 +70,7 @@ export default function PatientDetailPage() {
       });
 
       if (response.ok) {
-        const updatedPatient = await response.json();
-        setPatient(updatedPatient);
-        updatePatientState(id as string, updatedPatient);
+        window.location.reload();
       }
     } catch (error) {
       console.error('Failed to update comment:', error);
@@ -152,6 +173,14 @@ export default function PatientDetailPage() {
                   label="Validation Notes"
                   fieldId={`trial_${tIdx}_relevance`}
                   initialComment={trialComments?.trial_fields['Relevance_Reasoning'] || { entries: [], current_status: 'draft' }}
+                  forcedExpanded={false}
+                  showSaveButton={isCommented}
+                  onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_relevance`, val)}
+                  onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_relevance`, comment, status, {
+                    trial_index: tIdx,
+                    type: 'trial_fields',
+                    fields: { Relevance_Reasoning: { comment, status, action: 'add' } }
+                  })}
                   onSave={(comment, status, isUpdate) => handleUpdateComment({
                     trial_index: tIdx,
                     type: 'trial_fields',
@@ -167,6 +196,14 @@ export default function PatientDetailPage() {
                   label="Validation Notes"
                   fieldId={`trial_${tIdx}_eligibility`}
                   initialComment={trialComments?.trial_fields['Eligibility_Reasoning'] || { entries: [], current_status: 'draft' }}
+                  forcedExpanded={false}
+                  showSaveButton={isCommented}
+                  onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_eligibility`, val)}
+                  onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_eligibility`, comment, status, {
+                    trial_index: tIdx,
+                    type: 'trial_fields',
+                    fields: { Eligibility_Reasoning: { comment, status, action: 'add' } }
+                  })}
                   onSave={(comment, status, isUpdate) => handleUpdateComment({
                     trial_index: tIdx,
                     type: 'trial_fields',
@@ -186,6 +223,14 @@ export default function PatientDetailPage() {
                   label="Validation Notes"
                   fieldId={`trial_${tIdx}_labels`}
                   initialComment={trialComments?.trial_fields['Predicted_Labels'] || { entries: [], current_status: 'draft' }}
+                  forcedExpanded={false}
+                  showSaveButton={isCommented}
+                  onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_labels`, val)}
+                  onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_labels`, comment, status, {
+                    trial_index: tIdx,
+                    type: 'trial_fields',
+                    fields: { Predicted_Labels: { comment, status, action: 'add' } }
+                  })}
                   onSave={(comment, status, isUpdate) => handleUpdateComment({
                     trial_index: tIdx,
                     type: 'trial_fields',
@@ -216,6 +261,15 @@ export default function PatientDetailPage() {
                         label="Reasoning Validation"
                         fieldId={`inc_${iIdx}_reasoning`}
                         initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
+                        forcedExpanded={false}
+                        showSaveButton={isCommented}
+                        onToggleExpand={(val) => handleToggleExpand(`inc_${iIdx}_reasoning`, val)}
+                        onChange={(comment, status) => trackPendingUpdate(`inc_${iIdx}_reasoning`, comment, status, {
+                          trial_index: tIdx,
+                          type: 'inclusion',
+                          item_index: iIdx,
+                          fields: { LLM_Reasoning: { comment, status, action: 'add' } }
+                        })}
                         onSave={(comment, status, isUpdate) => handleUpdateComment({
                           trial_index: tIdx,
                           type: 'inclusion',
@@ -250,6 +304,15 @@ export default function PatientDetailPage() {
                         label="Reasoning Validation"
                         fieldId={`exc_${eIdx}_reasoning`}
                         initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
+                        forcedExpanded={false}
+                        showSaveButton={isCommented}
+                        onToggleExpand={(val) => handleToggleExpand(`exc_${eIdx}_reasoning`, val)}
+                        onChange={(comment, status) => trackPendingUpdate(`exc_${eIdx}_reasoning`, comment, status, {
+                          trial_index: tIdx,
+                          type: 'exclusion',
+                          item_index: eIdx,
+                          fields: { LLM_Reasoning: { comment, status, action: 'add' } }
+                        })}
                         onSave={(comment, status, isUpdate) => handleUpdateComment({
                           trial_index: tIdx,
                           type: 'exclusion',

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { ReviewStatus } from '@/types/patient';
 
 interface Patient {
   id: string;
@@ -18,6 +19,15 @@ interface PatientContextType {
   refreshPatients: () => Promise<void>;
   updatePatientState: (id: string, updatedData: Partial<Patient>) => void;
   getPatientById: (id: string) => Patient | undefined;
+  
+  // Validation State
+  pendingUpdates: Record<string, any>;
+  expandedFields: Set<string>;
+  isSavingAll: boolean;
+  trackPendingUpdate: (fieldId: string, comment: string, status: ReviewStatus, payload: any) => void;
+  handleToggleExpand: (fieldId: string, isExpanded: boolean) => void;
+  handleGlobalSave: (patientId: string, currentPatient: any) => Promise<void>;
+  clearValidationState: () => void;
 }
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
@@ -26,6 +36,11 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Validation State
+  const [pendingUpdates, setPendingUpdates] = useState<Record<string, any>>({});
+  const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
+  const [isSavingAll, setIsSavingAll] = useState(false);
 
   const refreshPatients = useCallback(async () => {
     try {
@@ -50,6 +65,55 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     return patients.find(p => p.id === id);
   }, [patients]);
 
+  const trackPendingUpdate = useCallback((fieldId: string, comment: string, status: ReviewStatus, payload: any) => {
+    setPendingUpdates(prev => ({
+      ...prev,
+      [fieldId]: { comment, status, payload }
+    }));
+  }, []);
+
+  const handleToggleExpand = useCallback((fieldId: string, isExpanded: boolean) => {
+    setExpandedFields(prev => {
+      const next = new Set(prev);
+      if (isExpanded) next.add(fieldId);
+      else next.delete(fieldId);
+      return next;
+    });
+  }, []);
+
+  const clearValidationState = useCallback(() => {
+    setPendingUpdates({});
+    setExpandedFields(new Set());
+    setIsSavingAll(false);
+  }, []);
+
+  const handleGlobalSave = useCallback(async (patientId: string, currentPatient: any) => {
+    const updates = Object.values(pendingUpdates).filter(u => u.comment.trim() !== '');
+    if (updates.length === 0) return;
+
+    setIsSavingAll(true);
+    try {
+      let lastUpdatedPatient = currentPatient;
+      for (const update of updates) {
+        const response = await fetch(`/api/patients/${patientId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(update.payload),
+        });
+        if (response.ok) {
+          lastUpdatedPatient = await response.json();
+        }
+      }
+      // Full reload to ensure all states are reset as requested
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to save all comments:', err);
+      alert('Failed to save some comments. Please check your connection.');
+    } finally {
+      setIsSavingAll(false);
+    }
+  }, [pendingUpdates, updatePatientState, clearValidationState]);
+
   useEffect(() => {
     refreshPatients();
   }, [refreshPatients]);
@@ -61,7 +125,14 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       error, 
       refreshPatients, 
       updatePatientState,
-      getPatientById
+      getPatientById,
+      pendingUpdates,
+      expandedFields,
+      isSavingAll,
+      trackPendingUpdate,
+      handleToggleExpand,
+      handleGlobalSave,
+      clearValidationState
     }}>
       {children}
     </PatientContext.Provider>

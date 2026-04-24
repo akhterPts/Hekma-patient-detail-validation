@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PatientProvider } from '../context/PatientContext';
-import Image from 'next/image';
+import Navbar from '../components/layout/Navbar';
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,19 +18,7 @@ export default function RootLayout({
       <body>
         <PatientProvider>
           <div className="app-container">
-            <header className="top-nav">
-              <div className="logo-container">
-                <a href="/patients">
-                  <Image 
-                    src="/Images/logo.svg" 
-                    alt="Hekma Logo" 
-                    width={160} 
-                    height={50} 
-                    priority
-                  />
-                </a>
-              </div>
-            </header>
+            <Navbar />
             <main className="main-content">
               {children}
             </main>

@@ -9,9 +9,21 @@ interface CommentBoxProps {
   onSave: (comment: string, status: ReviewStatus, isUpdate: boolean) => void;
   label?: string;
   fieldId: string;
+  forcedExpanded?: boolean;
+  showSaveButton?: boolean;
+  onChange?: (comment: string, status: ReviewStatus) => void;
+  onToggleExpand?: (isExpanded: boolean) => void;
 }
 
-export default function CommentBox({ initialComment, onSave, label }: CommentBoxProps) {
+export default function CommentBox({ 
+  initialComment, 
+  onSave, 
+  label, 
+  forcedExpanded = false, 
+  showSaveButton = true,
+  onChange,
+  onToggleExpand
+}: CommentBoxProps) {
   // Compatibility Layer
   const legacyComment = (initialComment as any).comment;
   const legacyStatus = (initialComment as any).status;
@@ -39,9 +51,14 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
   const showPencil = !!hasActiveIssue;
   const showPlus = !latestEntry || isLatestResolved;
 
+  const [isMounted, setIsMounted] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [currentStatus, setCurrentStatus] = useState<ReviewStatus>(statusAtLoad);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(forcedExpanded);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Sync state when entering Edit vs Add mode
   const enterEditMode = () => {
@@ -50,12 +67,28 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
       setCurrentStatus(latestEntry.status);
     }
     setIsExpanded(true);
+    onToggleExpand?.(true);
   };
 
   const enterAddMode = () => {
     setNewComment('');
     setCurrentStatus('draft');
     setIsExpanded(true);
+    onToggleExpand?.(true);
+  };
+
+  const handleTextChange = (val: string) => {
+    setNewComment(val);
+    if (!showSaveButton && onChange) {
+      onChange(val, currentStatus);
+    }
+  };
+
+  const handleStatusChange = (status: ReviewStatus) => {
+    setCurrentStatus(status);
+    if (!showSaveButton && onChange) {
+      onChange(newComment, status);
+    }
   };
 
   const handleUpdate = () => {
@@ -63,7 +96,13 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
       onSave(newComment, currentStatus, showPencil); // isUpdate = showPencil
       setNewComment('');
       setIsExpanded(false);
+      onToggleExpand?.(false);
     }
+  };
+
+  const toggleCollapse = () => {
+    setIsExpanded(false);
+    onToggleExpand?.(false);
   };
 
 
@@ -76,6 +115,14 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
     }
   };
 
+  const getActiveStatusClass = (s: ReviewStatus) => {
+    if (currentStatus !== s) return '';
+    if (s === 'draft') return styles.draftActive;
+    if (s === 'needs_review') return styles.needsReviewActive;
+    if (s === 'resolved') return styles.resolvedActive;
+    return '';
+  };
+
   return (
     <div className={styles.threadWrapper}>
       {/* 1. Persistent Thread History */}
@@ -86,7 +133,7 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
               <div className={styles.itemHeader}>
                 <span className={styles.itemStatusLabel}>{entry.status.replace('_', ' ')}</span>
                 <span className={styles.itemDate}>
-                  {new Date(entry.timestamp).toLocaleDateString()} at {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {isMounted ? `${new Date(entry.timestamp).toLocaleDateString()} at ${new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '...'}
                 </span>
               </div>
               <p className={styles.itemText}>{entry.text}</p>
@@ -96,7 +143,7 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
       )}
 
       {/* 2. Toggleable Action Area */}
-      {!isExpanded ? (
+      {!isExpanded && !forcedExpanded ? (
         <div className={styles.collapsedWrapper}>
           {(showPlus || showPencil) && (
             <button 
@@ -113,15 +160,15 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
           <div className={styles.header}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className={styles.label}>{showPencil ? 'Modifying Observation' : 'New Clinical Entry'}</span>
-              <button className={styles.closeBtn} onClick={() => setIsExpanded(false)}>✕</button>
+              {!forcedExpanded && <button className={styles.closeBtn} onClick={toggleCollapse}>✕</button>}
             </div>
             <div className={styles.statusButtons}>
               {(['draft', 'needs_review', 'resolved'] as ReviewStatus[]).map((s) => (
                 <button 
                   key={s}
                   type="button"
-                  className={`${styles.statusBtn} ${currentStatus === s ? styles[`${s}Active`] || styles[`${s.replace('_', 'R')}Active`] : ''} ${s === 'needs_review' && currentStatus === 'needs_review' ? styles.needsReviewActive : ''}`}
-                  onClick={() => setCurrentStatus(s)}
+                  className={`${styles.statusBtn} ${getActiveStatusClass(s)}`}
+                  onClick={() => handleStatusChange(s)}
                 >
                   {s.replace('_', ' ')}
                 </button>
@@ -132,23 +179,25 @@ export default function CommentBox({ initialComment, onSave, label }: CommentBox
           <div className={styles.inputGroup}>
             <textarea
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={(e) => handleTextChange(e.target.value)}
               placeholder={showPencil ? "Update your observation..." : "Start a new clinical note..."}
               rows={2}
-              autoFocus
+              autoFocus={!forcedExpanded}
             />
-            <div className={styles.actionRow}>
-              <button className={styles.cancelBtn} onClick={() => setIsExpanded(false)}>
-                Cancel
-              </button>
-              <button 
-                className={styles.updateBtn} 
-                onClick={handleUpdate}
-                disabled={!newComment.trim() && currentStatus === statusAtLoad}
-              >
-                {showPencil ? 'Save Changes' : 'Post to Thread'}
-              </button>
-            </div>
+            {showSaveButton && (
+              <div className={styles.actionRow}>
+                <button className={styles.cancelBtn} onClick={toggleCollapse}>
+                  Cancel
+                </button>
+                <button 
+                  className={styles.updateBtn} 
+                  onClick={handleUpdate}
+                  disabled={!newComment.trim() && currentStatus === statusAtLoad}
+                >
+                  {showPencil ? 'Save Changes' : 'Post to Thread'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
