@@ -19,6 +19,7 @@ export default function Navbar() {
   const patient = id ? getPatientById(id as string) : null;
   const isCommented = patient?.comments?.Trials?.length > 0;
   const showGlobalSave = !isCommented && expandedFields.size > 0 && !!id;
+  const hasValidUpdates = Object.values(pendingUpdates).some((u: any) => u.comment?.trim() !== '');
 
   const onGlobalSave = () => {
     if (id) {
@@ -48,7 +49,7 @@ export default function Navbar() {
           <button 
             onClick={onGlobalSave} 
             className={styles.primaryBtn}
-            disabled={isSavingAll || Object.keys(pendingUpdates).length === 0}
+            disabled={isSavingAll || !hasValidUpdates}
           >
             {isSavingAll ? 'Saving...' : 'Save All Validation Notes'}
           </button>

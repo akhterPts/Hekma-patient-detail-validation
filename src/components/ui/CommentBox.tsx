@@ -92,7 +92,7 @@ export default function CommentBox({
   };
 
   const handleUpdate = () => {
-    if (newComment.trim() || currentStatus !== statusAtLoad) {
+    if (newComment.trim()) {
       onSave(newComment, currentStatus, showPencil); // isUpdate = showPencil
       setNewComment('');
       setIsExpanded(false);
@@ -192,7 +192,7 @@ export default function CommentBox({
                 <button 
                   className={styles.updateBtn} 
                   onClick={handleUpdate}
-                  disabled={!newComment.trim() && currentStatus === statusAtLoad}
+                  disabled={!newComment.trim()}
                 >
                   {showPencil ? 'Save Changes' : 'Post to Thread'}
                 </button>
