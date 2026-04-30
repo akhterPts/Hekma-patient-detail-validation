@@ -19,12 +19,14 @@ export default function PatientList() {
       (p.summary && p.summary.toLowerCase().includes(searchLower));
 
     let matchesFilter = true;
-    if (filterStatus === 'needs_review') {
-      matchesFilter = p.has_review_requests === true;
-    } else if (filterStatus === 'resolved') {
-      matchesFilter = p.has_review_requests === false;
-    } else if (filterStatus === 'commented') {
+    if (filterStatus === 'commented') {
       matchesFilter = p.is_commented === true;
+    } else if (filterStatus === 'needs_review') {
+      matchesFilter = p.has_review_requests === true;
+    } else if (filterStatus === 'clean') {
+      matchesFilter = p.has_review_requests === false;
+    } else if (filterStatus === 'not_commented') {
+      matchesFilter = p.is_commented === false;
     }
  
     return matchesSearch && matchesFilter;
@@ -93,9 +95,10 @@ export default function PatientList() {
           className={styles.filterSelect}
         >
           <option value="all">All Statuses</option>
-          <option value="needs_review">Needs Review</option>
-          <option value="resolved">Resolved</option>
           <option value="commented">Commented</option>
+          <option value="needs_review">Needs Review</option>
+          <option value="clean">Clean</option>
+          <option value="not_commented">Not yet commented</option>
         </select>
       </div>
 
