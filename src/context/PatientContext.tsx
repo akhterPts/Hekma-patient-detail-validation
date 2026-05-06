@@ -16,6 +16,8 @@ interface PatientContextType {
   patients: Patient[];
   loading: boolean;
   error: string | null;
+  /** Bumps when bulk save finishes so the patient detail page can pull fresh data from context. */
+  detailSyncEpochById: Record<string, number>;
   refreshPatients: () => Promise<void>;
   updatePatientState: (id: string, updatedData: Partial<Patient>) => void;
   getPatientById: (id: string) => Patient | undefined;
@@ -41,6 +43,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [pendingUpdates, setPendingUpdates] = useState<Record<string, any>>({});
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
   const [isSavingAll, setIsSavingAll] = useState(false);
+  const [detailSyncEpochById, setDetailSyncEpochById] = useState<Record<string, number>>({});
 
   const refreshPatients = useCallback(async () => {
     try {
@@ -87,32 +90,56 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     setIsSavingAll(false);
   }, []);
 
+  const bumpDetailSync = useCallback((patientId: string) => {
+    setDetailSyncEpochById((prev) => ({
+      ...prev,
+      [patientId]: (prev[patientId] ?? 0) + 1,
+    }));
+  }, []);
+
   const handleGlobalSave = useCallback(async (patientId: string, currentPatient: any) => {
     const updates = Object.values(pendingUpdates).filter(u => u.comment.trim() !== '');
     if (updates.length === 0) return;
 
     setIsSavingAll(true);
+    const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
     try {
       let lastUpdatedPatient = currentPatient;
       for (const update of updates) {
         const response = await fetch(`/api/patients/${patientId}/comments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
           body: JSON.stringify(update.payload),
         });
         if (response.ok) {
           lastUpdatedPatient = await response.json();
         }
       }
-      // Full reload to ensure all states are reset as requested
-      window.location.reload();
+      let merged = lastUpdatedPatient;
+      const hasTrialsComments =
+        merged?.comments?.Trials != null && Array.isArray(merged.comments.Trials);
+      const hasPatientData = merged?.data != null;
+      if (!hasTrialsComments || !hasPatientData) {
+        const latestResponse = await fetch(`/api/patients/${patientId}`, { cache: 'no-store' });
+        if (latestResponse.ok) {
+          merged = await latestResponse.json();
+        }
+      }
+      updatePatientState(patientId, merged);
+      setPendingUpdates({});
+      setExpandedFields(new Set());
+      bumpDetailSync(patientId);
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollY, behavior: 'auto' });
+      });
     } catch (err) {
       console.error('Failed to save all comments:', err);
       alert('Failed to save some comments. Please check your connection.');
     } finally {
       setIsSavingAll(false);
     }
-  }, [pendingUpdates, updatePatientState, clearValidationState]);
+  }, [pendingUpdates, updatePatientState, bumpDetailSync]);
 
   useEffect(() => {
     refreshPatients();
@@ -123,6 +150,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       patients, 
       loading, 
       error, 
+      detailSyncEpochById,
       refreshPatients, 
       updatePatientState,
       getPatientById,

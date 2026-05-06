@@ -27,6 +27,40 @@
   min-width: 0;
 }
 
+.trialPanelHidden {
+  display: none;
+}
+
+.trialTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.trialTab {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-soft);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.trialTab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.trialTabActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
 .detailHeader {
   display: flex;
   justify-content: space-between;
