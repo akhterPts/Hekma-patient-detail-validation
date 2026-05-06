@@ -108,32 +108,36 @@ export default function PatientDetailPage() {
         </div>
       </header>
 
-      <section className={`${styles.summaryCard} card`}>
-        <h3>Clinical Case Summary</h3>
-        <p>{patient.data?.Patient_Summary || patient.summary}</p>
-      </section>
+      <div className={styles.mainContent}>
+        <aside className={styles.leftColumn}>
+          <section className={`${styles.summaryCard} card`}>
+            <h3>Clinical Case Summary</h3>
+            <p>{patient.data?.Patient_Summary || patient.summary}</p>
+          </section>
 
-      {patient.data.Patient_Block_Summary && (
-        <section className={styles.profileSection}>
-          <h3>Patient Clinical Profile</h3>
-          <div className={styles.profileGrid}>
-            {Object.entries(patient.data.Patient_Block_Summary as Record<string, any>).map(([key, value]) => (
-              value ? (
-                <div key={key} className={styles.profileItem}>
-                  <label>{key.replace(/_/g, ' ')}</label>
-                  <div>{typeof value === 'string' ? value : JSON.stringify(value)}</div>
-                </div>
-              ) : null
-            ))}
-          </div>
-        </section>
-      )}
+          {patient.data.Patient_Block_Summary && (
+            <section className={styles.profileSection}>
+              <h3>Patient Clinical Profile</h3>
+              <div className={styles.profileGrid}>
+                {Object.entries(patient.data.Patient_Block_Summary as Record<string, any>).map(([key, value]) => (
+                  value ? (
+                    <div key={key} className={styles.profileItem}>
+                      <label>{key.replace(/_/g, ' ')}</label>
+                      <div>{typeof value === 'string' ? value : JSON.stringify(value)}</div>
+                    </div>
+                  ) : null
+                ))}
+              </div>
+            </section>
+          )}
+        </aside>
 
-      {patient.data.Trials?.map((trial: any, tIdx: number) => {
-        const trialComments = patient.comments?.Trials?.find((t: any) => t.trial_index === tIdx);
+        <section className={styles.rightColumn}>
+          {patient.data.Trials?.map((trial: any, tIdx: number) => {
+            const trialComments = patient.comments?.Trials?.find((t: any) => t.trial_index === tIdx);
 
-        return (
-          <div key={tIdx} className={styles.trialBlock}>
+            return (
+              <div key={tIdx} className={styles.trialBlock}>
             <header className={styles.trialHeader}>
               <div className={styles.trialHeaderTop}>
                 <span className={styles.trialIdBadge}>{trial.Trail_ID}</span>
@@ -332,16 +336,18 @@ export default function PatientDetailPage() {
                 })}
               </div>
             </div>
-          </div>
-        );
-      })}
-      <footer className={styles.footerActions}>
-        <button onClick={() => router.push('/patients')} className={styles.secondaryBtn}>Back to Records List</button>
-        <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-          <button onClick={handleDownload} className={styles.secondaryBtn}>Download Final JSON</button>
-          <button onClick={() => router.push('/patients')} className={styles.primaryBtn}>Save & Finalize Validation</button>
-        </div>
-      </footer>
+              </div>
+            );
+          })}
+          <footer className={styles.footerActions}>
+            <button onClick={() => router.push('/patients')} className={styles.secondaryBtn}>Back to Records List</button>
+            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+              <button onClick={handleDownload} className={styles.secondaryBtn}>Download Final JSON</button>
+              <button onClick={() => router.push('/patients')} className={styles.primaryBtn}>Save & Finalize Validation</button>
+            </div>
+          </footer>
+        </section>
+      </div>
     </div>
   );
 }
