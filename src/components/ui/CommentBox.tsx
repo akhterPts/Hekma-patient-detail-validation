@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ReviewStatus, PatientComment, CommentEntry } from '@/types/patient';
 import styles from './CommentBox.module.css';
 
@@ -13,6 +13,8 @@ interface CommentBoxProps {
   showSaveButton?: boolean;
   onChange?: (comment: string, status: ReviewStatus) => void;
   onToggleExpand?: (isExpanded: boolean) => void;
+  /** When this increments (e.g. after “Save all validation notes”), the editor collapses like a single-note save. */
+  bulkSaveCollapseEpoch?: number;
 }
 
 export default function CommentBox({ 
@@ -22,43 +24,62 @@ export default function CommentBox({
   forcedExpanded = false, 
   showSaveButton = true,
   onChange,
-  onToggleExpand
+  onToggleExpand,
+  bulkSaveCollapseEpoch = 0,
 }: CommentBoxProps) {
-  // Compatibility Layer
-  const legacyComment = (initialComment as any).comment;
-  const legacyStatus = (initialComment as any).status;
-  
-  let initialEntries = initialComment.entries || [];
-  let statusAtLoad = initialComment.current_status || legacyStatus || 'draft';
+  const { entries, latestEntry, statusAtLoad, showPencil, showPlus } = useMemo(() => {
+    const legacyComment = (initialComment as any).comment;
+    const legacyStatus = (initialComment as any).status;
 
-  if (initialEntries.length === 0 && legacyComment) {
-    initialEntries = [{
-      text: legacyComment,
-      status: statusAtLoad,
-      timestamp: new Date().toISOString()
-    }];
-  }
+    let threadEntries = initialComment.entries || [];
+    let statusLoad = initialComment.current_status || legacyStatus || 'draft';
 
-  const entries = initialEntries;
-  const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+    if (threadEntries.length === 0 && legacyComment) {
+      threadEntries = [{
+        text: legacyComment,
+        status: statusLoad,
+        timestamp: new Date().toISOString()
+      }];
+    }
 
-  // RULES:
-  // - Pencil (Update): Only for the latest entry if it is NOT resolved.
-  // - Plus (Add): For empty fields OR when the latest entry IS resolved.
-  const hasActiveIssue = latestEntry && latestEntry.status !== 'resolved';
-  const isLatestResolved = latestEntry?.status === 'resolved';
+    const latest = threadEntries.length > 0 ? threadEntries[threadEntries.length - 1] : null;
+    const hasActiveIssue = latest && latest.status !== 'resolved';
+    const isLatestResolved = latest?.status === 'resolved';
+    const showP = !!hasActiveIssue;
+    const showPl = !latest || !!isLatestResolved;
 
-  const showPencil = !!hasActiveIssue;
-  const showPlus = !latestEntry || isLatestResolved;
+    return {
+      entries: threadEntries,
+      latestEntry: latest,
+      statusAtLoad: statusLoad,
+      showPencil: showP,
+      showPlus: showPl,
+    };
+  }, [initialComment]);
 
   const [isMounted, setIsMounted] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [currentStatus, setCurrentStatus] = useState<ReviewStatus>(statusAtLoad);
   const [isExpanded, setIsExpanded] = useState(forcedExpanded);
+  const lastBulkCollapseApplied = useRef(-1);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const epoch = bulkSaveCollapseEpoch ?? 0;
+    if (epoch === lastBulkCollapseApplied.current) return;
+    lastBulkCollapseApplied.current = epoch;
+    if (epoch < 1) return;
+    setIsExpanded(false);
+    setNewComment('');
+    onToggleExpand?.(false);
+  }, [bulkSaveCollapseEpoch, onToggleExpand]);
+
+  useEffect(() => {
+    setCurrentStatus(statusAtLoad);
+  }, [statusAtLoad]);
 
   // Sync state when entering Edit vs Add mode
   const enterEditMode = () => {

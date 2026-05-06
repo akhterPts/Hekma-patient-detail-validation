@@ -13,35 +13,26 @@ export default function PatientDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const {
-    patients,
     updatePatientState,
     getPatientById,
-    pendingUpdates,
+    detailSyncEpochById,
     trackPendingUpdate,
-    expandedFields,
     handleToggleExpand,
-    handleGlobalSave,
-    isSavingAll,
     clearValidationState
   } = usePatients();
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTrialIndex, setActiveTrialIndex] = useState(0);
 
   const isCommented = patient?.comments?.Trials?.length > 0;
 
-  const loadPatientData = useCallback(async (forceFetch = false) => {
-    if (!forceFetch) {
-      const p = getPatientById(id as string);
-      if (p && p.data && p.comments) {
-        setPatient(p);
-        setLoading(false);
-        return;
-      }
-    }
-
+  // Detail page always loads from GET /patients/:id (not list cache).
+  // loadPatient must not depend on getPatientById/context patients; context updates after save used to recreate this callback,
+  // trigger the mount effect again, and overwrite freshly saved data with a stale snapshot from the patient list.
+  const loadPatientData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/patients/${id}`);
+      const res = await fetch(`/api/patients/${id}`, { cache: 'no-store' });
       const data = await res.json();
       setPatient(data);
       updatePatientState(id as string, data);
@@ -50,11 +41,31 @@ export default function PatientDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, getPatientById, updatePatientState]);
+  }, [id, updatePatientState]);
 
   useEffect(() => {
     loadPatientData();
   }, [loadPatientData]);
+
+  const bulkSaveSyncEpoch = detailSyncEpochById[id as string] ?? 0;
+  useEffect(() => {
+    if (bulkSaveSyncEpoch === 0) return;
+    const p = getPatientById(id as string);
+    if (p?.data && p.comments != null) {
+      setPatient(p);
+    }
+  }, [bulkSaveSyncEpoch, id, getPatientById]);
+
+  useEffect(() => {
+    const trialCount = patient?.data?.Trials?.length ?? 0;
+    if (trialCount === 0) {
+      setActiveTrialIndex(0);
+      return;
+    }
+    if (activeTrialIndex >= trialCount) {
+      setActiveTrialIndex(0);
+    }
+  }, [patient, activeTrialIndex]);
 
   // Clean validation state on unmount or patient change
   useEffect(() => {
@@ -63,6 +74,7 @@ export default function PatientDetailPage() {
 
   const handleUpdateComment = async (update: any) => {
     try {
+      const currentScrollY = window.scrollY;
       const response = await fetch(`/api/patients/${id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +82,24 @@ export default function PatientDetailPage() {
       });
 
       if (response.ok) {
-        window.location.reload();
+        let nextPatient = await response.json();
+        const hasTrialsComments =
+          nextPatient?.comments?.Trials != null && Array.isArray(nextPatient.comments.Trials);
+        const hasPatientData = nextPatient?.data != null;
+        // POST response is authoritative; GET right after POST can briefly return stale reads.
+        if (!hasTrialsComments || !hasPatientData) {
+          const latestResponse = await fetch(`/api/patients/${id}`, { cache: 'no-store' });
+          if (latestResponse.ok) {
+            nextPatient = await latestResponse.json();
+          }
+        }
+        setPatient(nextPatient);
+        updatePatientState(id as string, nextPatient);
+
+        // Keep viewport stable after state replacement.
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: currentScrollY, behavior: 'auto' });
+        });
       }
     } catch (error) {
       console.error('Failed to update comment:', error);
@@ -108,32 +137,55 @@ export default function PatientDetailPage() {
         </div>
       </header>
 
-      <section className={`${styles.summaryCard} card`}>
-        <h3>Clinical Case Summary</h3>
-        <p>{patient.data?.Patient_Summary || patient.summary}</p>
-      </section>
+      <div className={styles.mainContent}>
+        <aside className={styles.leftColumn}>
+          <section className={`${styles.summaryCard} card`}>
+            <h3>Clinical Case Summary</h3>
+            <p>{patient.data?.Patient_Summary || patient.summary}</p>
+          </section>
 
-      {patient.data.Patient_Block_Summary && (
-        <section className={styles.profileSection}>
-          <h3>Patient Clinical Profile</h3>
-          <div className={styles.profileGrid}>
-            {Object.entries(patient.data.Patient_Block_Summary as Record<string, any>).map(([key, value]) => (
-              value ? (
-                <div key={key} className={styles.profileItem}>
-                  <label>{key.replace(/_/g, ' ')}</label>
-                  <div>{typeof value === 'string' ? value : JSON.stringify(value)}</div>
-                </div>
-              ) : null
+          {patient.data.Patient_Block_Summary && (
+            <section className={styles.profileSection}>
+              <h3>Patient Clinical Profile</h3>
+              <div className={styles.profileGrid}>
+                {Object.entries(patient.data.Patient_Block_Summary as Record<string, any>).map(([key, value]) => (
+                  value ? (
+                    <div key={key} className={styles.profileItem}>
+                      <label>{key.replace(/_/g, ' ')}</label>
+                      <div>{typeof value === 'string' ? value : JSON.stringify(value)}</div>
+                    </div>
+                  ) : null
+                ))}
+              </div>
+            </section>
+          )}
+        </aside>
+
+        <section className={styles.rightColumn}>
+          <div className={styles.trialTabs}>
+            {patient.data.Trials?.map((trial: any, tIdx: number) => (
+              <button
+                key={`${trial.Trail_ID || 'trial'}-${tIdx}`}
+                type="button"
+                className={`${styles.trialTab} ${activeTrialIndex === tIdx ? styles.trialTabActive : ''}`}
+                onClick={() => setActiveTrialIndex(tIdx)}
+              >
+                {trial.Trail_ID || `Trial ${tIdx + 1}`}
+              </button>
             ))}
           </div>
-        </section>
-      )}
 
-      {patient.data.Trials?.map((trial: any, tIdx: number) => {
-        const trialComments = patient.comments?.Trials?.find((t: any) => t.trial_index === tIdx);
+          {patient.data.Trials?.map((trial: any, tIdx: number) => {
+            const trialComments = patient.comments?.Trials?.find((t: any) => t.trial_index === tIdx);
+            const isActivePanel = activeTrialIndex === tIdx;
 
-        return (
-          <div key={tIdx} className={styles.trialBlock}>
+            return (
+              <div
+                key={tIdx}
+                className={!isActivePanel ? styles.trialPanelHidden : undefined}
+                aria-hidden={!isActivePanel}
+              >
+              <div className={styles.trialBlock}>
             <header className={styles.trialHeader}>
               <div className={styles.trialHeaderTop}>
                 <span className={styles.trialIdBadge}>{trial.Trail_ID}</span>
@@ -174,6 +226,7 @@ export default function PatientDetailPage() {
                     fieldId={`trial_${tIdx}_relevance`}
                     initialComment={trialComments?.trial_fields['Relevance_Reasoning'] || { entries: [], current_status: 'draft' }}
                     forcedExpanded={false}
+                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                     showSaveButton={isCommented}
                     onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_relevance`, val)}
                     onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_relevance`, comment, status, {
@@ -197,6 +250,7 @@ export default function PatientDetailPage() {
                     fieldId={`trial_${tIdx}_eligibility`}
                     initialComment={trialComments?.trial_fields['Eligibility_Reasoning'] || { entries: [], current_status: 'draft' }}
                     forcedExpanded={false}
+                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                     showSaveButton={isCommented}
                     onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_eligibility`, val)}
                     onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_eligibility`, comment, status, {
@@ -224,6 +278,7 @@ export default function PatientDetailPage() {
                     fieldId={`trial_${tIdx}_labels`}
                     initialComment={trialComments?.trial_fields['Predicted_Labels'] || { entries: [], current_status: 'draft' }}
                     forcedExpanded={false}
+                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                     showSaveButton={isCommented}
                     onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_labels`, val)}
                     onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_labels`, comment, status, {
@@ -262,12 +317,13 @@ export default function PatientDetailPage() {
                       <div className={styles.commentSingle}>
                         <CommentBox
                           label="Reasoning Validation"
-                          fieldId={`inc_${iIdx}_reasoning`}
+                          fieldId={`inc_${tIdx}_${iIdx}_reasoning`}
                           initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
                           forcedExpanded={false}
+                          bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                           showSaveButton={isCommented}
-                          onToggleExpand={(val) => handleToggleExpand(`inc_${iIdx}_reasoning`, val)}
-                          onChange={(comment, status) => trackPendingUpdate(`inc_${iIdx}_reasoning`, comment, status, {
+                          onToggleExpand={(val) => handleToggleExpand(`inc_${tIdx}_${iIdx}_reasoning`, val)}
+                          onChange={(comment, status) => trackPendingUpdate(`inc_${tIdx}_${iIdx}_reasoning`, comment, status, {
                             trial_index: tIdx,
                             type: 'inclusion',
                             item_index: iIdx,
@@ -308,12 +364,13 @@ export default function PatientDetailPage() {
                       <div className={styles.commentSingle}>
                         <CommentBox
                           label="Reasoning Validation"
-                          fieldId={`exc_${eIdx}_reasoning`}
+                          fieldId={`exc_${tIdx}_${eIdx}_reasoning`}
                           initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
                           forcedExpanded={false}
+                          bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                           showSaveButton={isCommented}
-                          onToggleExpand={(val) => handleToggleExpand(`exc_${eIdx}_reasoning`, val)}
-                          onChange={(comment, status) => trackPendingUpdate(`exc_${eIdx}_reasoning`, comment, status, {
+                          onToggleExpand={(val) => handleToggleExpand(`exc_${tIdx}_${eIdx}_reasoning`, val)}
+                          onChange={(comment, status) => trackPendingUpdate(`exc_${tIdx}_${eIdx}_reasoning`, comment, status, {
                             trial_index: tIdx,
                             type: 'exclusion',
                             item_index: eIdx,
@@ -332,16 +389,19 @@ export default function PatientDetailPage() {
                 })}
               </div>
             </div>
-          </div>
-        );
-      })}
-      <footer className={styles.footerActions}>
-        <button onClick={() => router.push('/patients')} className={styles.secondaryBtn}>Back to Records List</button>
-        <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-          <button onClick={handleDownload} className={styles.secondaryBtn}>Download Final JSON</button>
-          <button onClick={() => router.push('/patients')} className={styles.primaryBtn}>Save & Finalize Validation</button>
-        </div>
-      </footer>
+              </div>
+              </div>
+            );
+          })}
+          <footer className={styles.footerActions}>
+            <button onClick={() => router.push('/patients')} className={styles.secondaryBtn}>Back to Records List</button>
+            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+              <button onClick={handleDownload} className={styles.secondaryBtn}>Download Final JSON</button>
+              <button onClick={() => router.push('/patients')} className={styles.primaryBtn}>Save & Finalize Validation</button>
+            </div>
+          </footer>
+        </section>
+      </div>
     </div>
   );
 }
