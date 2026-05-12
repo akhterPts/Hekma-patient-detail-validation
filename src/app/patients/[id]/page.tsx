@@ -132,7 +132,7 @@ export default function PatientDetailPage() {
     <div className={styles.patientDetail}>
       <header className={styles.detailHeader}>
         <div className={styles.headerInfo}>
-          <h1>Patient ID: {patient.id?.slice(0, 12)}</h1>
+          <h2>Patient ID: {patient.data.Patient_ID}</h2>
           <StatusIndicator status={patient.has_review_requests ? 'needs_review' : 'resolved'} />
         </div>
       </header>
@@ -185,211 +185,211 @@ export default function PatientDetailPage() {
                 className={!isActivePanel ? styles.trialPanelHidden : undefined}
                 aria-hidden={!isActivePanel}
               >
-              <div className={styles.trialBlock}>
-            <header className={styles.trialHeader}>
-              <div className={styles.trialHeaderTop}>
-                <span className={styles.trialIdBadge}>{trial.Trail_ID}</span>
-                <h2>{trial.Trail_text.title}</h2>
-              </div>
+                <div className={styles.trialBlock}>
+                  <header className={styles.trialHeader}>
+                    <div className={styles.trialHeaderTop}>
+                      <span className={styles.trialIdBadge}>{trial.Trail_ID}</span>
+                      <h2>{trial.Trail_text.title}</h2>
+                    </div>
 
-              <div className={styles.trialMetaGrid}>
-                <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Phase</span>
-                  <span className={styles.metaValue}>{trial.Trail_text.metadata.phase || 'N/A'}</span>
-                </div>
-                <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Enrollment</span>
-                  <span className={styles.metaValue}>{trial.Trail_text.metadata.enrollment || '0'}</span>
-                </div>
-                <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Drugs</span>
-                  <span className={styles.metaValue}>{trial.Trail_text.metadata.drugs || 'None'}</span>
-                </div>
-              </div>
-            </header>
+                    <div className={styles.trialMetaGrid}>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Phase</span>
+                        <span className={styles.metaValue}>{trial.Trail_text.metadata.phase || 'N/A'}</span>
+                      </div>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Enrollment</span>
+                        <span className={styles.metaValue}>{trial.Trail_text.metadata.enrollment || '0'}</span>
+                      </div>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Drugs</span>
+                        <span className={styles.metaValue}>{trial.Trail_text.metadata.drugs || 'None'}</span>
+                      </div>
+                    </div>
+                  </header>
 
-            <div className={styles.summarySection}>
-              <div className={styles.protocolSummary}>
-                <strong>Brief Summary:</strong>
-                <p>{trial.Trail_text.metadata.brief_summary}</p>
-              </div>
-            </div>
-
-            <div className={styles.validationCore}>
-
-              <div className={styles.fieldsGrid}>
-                <div className={`${styles.fieldSection} card`}>
-                  <h4>Relevance Reasoning</h4>
-                  <div className={styles.originalVal}>{trial.Relevance_Reasoning}</div>
-                  <CommentBox
-                    label="Validation Notes"
-                    fieldId={`trial_${tIdx}_relevance`}
-                    initialComment={trialComments?.trial_fields['Relevance_Reasoning'] || { entries: [], current_status: 'draft' }}
-                    forcedExpanded={false}
-                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
-                    showSaveButton={isCommented}
-                    onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_relevance`, val)}
-                    onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_relevance`, comment, status, {
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Relevance_Reasoning: { comment, status, action: 'add' } }
-                    })}
-                    onSave={(comment, status, isUpdate) => handleUpdateComment({
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Relevance_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
-                    })}
-                  />
-                </div>
-
-                <div className={`${styles.fieldSection} card`}>
-                  <h4>Eligibility Reasoning</h4>
-                  <div className={styles.originalVal}>{trial.Eligibility_Reasoning}</div>
-                  <CommentBox
-                    label="Validation Notes"
-                    fieldId={`trial_${tIdx}_eligibility`}
-                    initialComment={trialComments?.trial_fields['Eligibility_Reasoning'] || { entries: [], current_status: 'draft' }}
-                    forcedExpanded={false}
-                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
-                    showSaveButton={isCommented}
-                    onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_eligibility`, val)}
-                    onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_eligibility`, comment, status, {
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Eligibility_Reasoning: { comment, status, action: 'add' } }
-                    })}
-                    onSave={(comment, status, isUpdate) => handleUpdateComment({
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Eligibility_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
-                    })}
-                  />
-                </div>
-
-                <div className={`${styles.fieldSection} card`}>
-                  <h4>Predicted Label</h4>
-                  <div className={styles.originalVal}>
-                    <span className="badge" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)', border: '1px solid var(--primary)' }}>
-                      {trial.Predicted_Labels}
-                    </span>
+                  <div className={styles.summarySection}>
+                    <div className={styles.protocolSummary}>
+                      <strong>Brief Summary:</strong>
+                      <p>{trial.Trail_text.metadata.brief_summary}</p>
+                    </div>
                   </div>
-                  <CommentBox
-                    label="Validation Notes"
-                    fieldId={`trial_${tIdx}_labels`}
-                    initialComment={trialComments?.trial_fields['Predicted_Labels'] || { entries: [], current_status: 'draft' }}
-                    forcedExpanded={false}
-                    bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
-                    showSaveButton={isCommented}
-                    onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_labels`, val)}
-                    onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_labels`, comment, status, {
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Predicted_Labels: { comment, status, action: 'add' } }
-                    })}
-                    onSave={(comment, status, isUpdate) => handleUpdateComment({
-                      trial_index: tIdx,
-                      type: 'trial_fields',
-                      fields: { Predicted_Labels: { comment, status, action: isUpdate ? 'update' : 'add' } }
-                    })}
-                  />
-                </div>
-              </div>
 
-              <div className={styles.criteriaList}>
-                <h3>Inclusion Criteria Mapping</h3>
-                <div className={`${styles.criteriaBody} my-3`}>
-                  <strong> Inclusion Criteria: {trial.Trail_text.metadata["inclusion_criteria"].split(":").at(1)}</strong>
-                </div>
-                {trial.Matching_Results.inclusion.map((item: any, iIdx: number) => {
-                  const itemComments = trialComments?.inclusion?.find((i: any) => i.item_index === iIdx);
-                  return (
-                    <div key={iIdx} className={`${styles.criteriaItem} card`}>
-                      <div className={styles.criteriaContent}>
-                        <div className={styles.criteriaHeader}>
-                          <strong>Criterion {iIdx + 1}</strong>
-                          <div className="badge pill">{item.LLM_output}</div>
-                        </div>
-                        <div className={styles.criteriaBody}>
-                          <strong>LLM Reasoning:</strong>
-                          <p>{item.LLM_Reasoning}</p>
-                        </div>
-                      </div>
-                      <div className={styles.commentSingle}>
+                  <div className={styles.validationCore}>
+
+                    <div className={styles.fieldsGrid}>
+                      <div className={`${styles.fieldSection} card`}>
+                        <h4>Relevance Reasoning</h4>
+                        <div className={styles.originalVal}>{trial.Relevance_Reasoning}</div>
                         <CommentBox
-                          label="Reasoning Validation"
-                          fieldId={`inc_${tIdx}_${iIdx}_reasoning`}
-                          initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
+                          label="Validation Notes"
+                          fieldId={`trial_${tIdx}_relevance`}
+                          initialComment={trialComments?.trial_fields['Relevance_Reasoning'] || { entries: [], current_status: 'draft' }}
                           forcedExpanded={false}
                           bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
                           showSaveButton={isCommented}
-                          onToggleExpand={(val) => handleToggleExpand(`inc_${tIdx}_${iIdx}_reasoning`, val)}
-                          onChange={(comment, status) => trackPendingUpdate(`inc_${tIdx}_${iIdx}_reasoning`, comment, status, {
+                          onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_relevance`, val)}
+                          onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_relevance`, comment, status, {
                             trial_index: tIdx,
-                            type: 'inclusion',
-                            item_index: iIdx,
-                            fields: { LLM_Reasoning: { comment, status, action: 'add' } }
+                            type: 'trial_fields',
+                            fields: { Relevance_Reasoning: { comment, status, action: 'add' } }
                           })}
                           onSave={(comment, status, isUpdate) => handleUpdateComment({
                             trial_index: tIdx,
-                            type: 'inclusion',
-                            item_index: iIdx,
-                            fields: { LLM_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
+                            type: 'trial_fields',
+                            fields: { Relevance_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
+                          })}
+                        />
+                      </div>
+
+                      <div className={`${styles.fieldSection} card`}>
+                        <h4>Eligibility Reasoning</h4>
+                        <div className={styles.originalVal}>{trial.Eligibility_Reasoning}</div>
+                        <CommentBox
+                          label="Validation Notes"
+                          fieldId={`trial_${tIdx}_eligibility`}
+                          initialComment={trialComments?.trial_fields['Eligibility_Reasoning'] || { entries: [], current_status: 'draft' }}
+                          forcedExpanded={false}
+                          bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
+                          showSaveButton={isCommented}
+                          onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_eligibility`, val)}
+                          onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_eligibility`, comment, status, {
+                            trial_index: tIdx,
+                            type: 'trial_fields',
+                            fields: { Eligibility_Reasoning: { comment, status, action: 'add' } }
+                          })}
+                          onSave={(comment, status, isUpdate) => handleUpdateComment({
+                            trial_index: tIdx,
+                            type: 'trial_fields',
+                            fields: { Eligibility_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
+                          })}
+                        />
+                      </div>
+
+                      <div className={`${styles.fieldSection} card`}>
+                        <h4>Predicted Label</h4>
+                        <div className={styles.originalVal}>
+                          <span className="badge" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)', border: '1px solid var(--primary)' }}>
+                            {trial.Predicted_Labels}
+                          </span>
+                        </div>
+                        <CommentBox
+                          label="Validation Notes"
+                          fieldId={`trial_${tIdx}_labels`}
+                          initialComment={trialComments?.trial_fields['Predicted_Labels'] || { entries: [], current_status: 'draft' }}
+                          forcedExpanded={false}
+                          bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
+                          showSaveButton={isCommented}
+                          onToggleExpand={(val) => handleToggleExpand(`trial_${tIdx}_labels`, val)}
+                          onChange={(comment, status) => trackPendingUpdate(`trial_${tIdx}_labels`, comment, status, {
+                            trial_index: tIdx,
+                            type: 'trial_fields',
+                            fields: { Predicted_Labels: { comment, status, action: 'add' } }
+                          })}
+                          onSave={(comment, status, isUpdate) => handleUpdateComment({
+                            trial_index: tIdx,
+                            type: 'trial_fields',
+                            fields: { Predicted_Labels: { comment, status, action: isUpdate ? 'update' : 'add' } }
                           })}
                         />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              <div className={styles.criteriaList}>
-                <h3>Exclusion Criteria Mapping</h3>
-                <div className={`${styles.criteriaBody} my-3`}>
-                  <strong> Exclusion Criteria: {trial.Trail_text.metadata["exclusion_criteria"].split(":").at(1)}</strong>
-                </div>
-                {trial.Matching_Results.exclusion.map((item: any, eIdx: number) => {
-                  const itemComments = trialComments?.exclusion?.find((e: any) => e.item_index === eIdx);
-                  return (
-                    <div key={eIdx} className={`${styles.criteriaItem} card`}>
-                      <div className={styles.criteriaContent}>
-                        <div className={styles.criteriaHeader}>
-                          <strong>Criterion {eIdx + 1}</strong>
-                          <div className="badge pill">{item.LLM_output}</div>
-                        </div>
-                        <div className={styles.criteriaBody}>
-                          <strong>LLM Reasoning:</strong>
-                          <p>{item.LLM_Reasoning}</p>
-                        </div>
+                    <div className={styles.criteriaList}>
+                      <h3>Inclusion Criteria Mapping</h3>
+                      <div className={`${styles.criteriaBody} my-3`}>
+                        <strong> Inclusion Criteria: {trial.Trail_text.metadata["inclusion_criteria"].split(":").at(1)}</strong>
                       </div>
-                      <div className={styles.commentSingle}>
-                        <CommentBox
-                          label="Reasoning Validation"
-                          fieldId={`exc_${tIdx}_${eIdx}_reasoning`}
-                          initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
-                          forcedExpanded={false}
-                          bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
-                          showSaveButton={isCommented}
-                          onToggleExpand={(val) => handleToggleExpand(`exc_${tIdx}_${eIdx}_reasoning`, val)}
-                          onChange={(comment, status) => trackPendingUpdate(`exc_${tIdx}_${eIdx}_reasoning`, comment, status, {
-                            trial_index: tIdx,
-                            type: 'exclusion',
-                            item_index: eIdx,
-                            fields: { LLM_Reasoning: { comment, status, action: 'add' } }
-                          })}
-                          onSave={(comment, status, isUpdate) => handleUpdateComment({
-                            trial_index: tIdx,
-                            type: 'exclusion',
-                            item_index: eIdx,
-                            fields: { LLM_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
-                          })}
-                        />
-                      </div>
+                      {trial.Matching_Results.inclusion.map((item: any, iIdx: number) => {
+                        const itemComments = trialComments?.inclusion?.find((i: any) => i.item_index === iIdx);
+                        return (
+                          <div key={iIdx} className={`${styles.criteriaItem} card`}>
+                            <div className={styles.criteriaContent}>
+                              <div className={styles.criteriaHeader}>
+                                <strong>Criterion {iIdx + 1}</strong>
+                                <div className="badge pill">{item.LLM_output}</div>
+                              </div>
+                              <div className={styles.criteriaBody}>
+                                <strong>LLM Reasoning:</strong>
+                                <p>{item.LLM_Reasoning}</p>
+                              </div>
+                            </div>
+                            <div className={styles.commentSingle}>
+                              <CommentBox
+                                label="Reasoning Validation"
+                                fieldId={`inc_${tIdx}_${iIdx}_reasoning`}
+                                initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
+                                forcedExpanded={false}
+                                bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
+                                showSaveButton={isCommented}
+                                onToggleExpand={(val) => handleToggleExpand(`inc_${tIdx}_${iIdx}_reasoning`, val)}
+                                onChange={(comment, status) => trackPendingUpdate(`inc_${tIdx}_${iIdx}_reasoning`, comment, status, {
+                                  trial_index: tIdx,
+                                  type: 'inclusion',
+                                  item_index: iIdx,
+                                  fields: { LLM_Reasoning: { comment, status, action: 'add' } }
+                                })}
+                                onSave={(comment, status, isUpdate) => handleUpdateComment({
+                                  trial_index: tIdx,
+                                  type: 'inclusion',
+                                  item_index: iIdx,
+                                  fields: { LLM_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
+                                })}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-              </div>
+
+                    <div className={styles.criteriaList}>
+                      <h3>Exclusion Criteria Mapping</h3>
+                      <div className={`${styles.criteriaBody} my-3`}>
+                        <strong> Exclusion Criteria: {trial.Trail_text.metadata["exclusion_criteria"].split(":").at(1)}</strong>
+                      </div>
+                      {trial.Matching_Results.exclusion.map((item: any, eIdx: number) => {
+                        const itemComments = trialComments?.exclusion?.find((e: any) => e.item_index === eIdx);
+                        return (
+                          <div key={eIdx} className={`${styles.criteriaItem} card`}>
+                            <div className={styles.criteriaContent}>
+                              <div className={styles.criteriaHeader}>
+                                <strong>Criterion {eIdx + 1}</strong>
+                                <div className="badge pill">{item.LLM_output}</div>
+                              </div>
+                              <div className={styles.criteriaBody}>
+                                <strong>LLM Reasoning:</strong>
+                                <p>{item.LLM_Reasoning}</p>
+                              </div>
+                            </div>
+                            <div className={styles.commentSingle}>
+                              <CommentBox
+                                label="Reasoning Validation"
+                                fieldId={`exc_${tIdx}_${eIdx}_reasoning`}
+                                initialComment={itemComments?.fields['LLM_Reasoning'] || { entries: [], current_status: 'draft' }}
+                                forcedExpanded={false}
+                                bulkSaveCollapseEpoch={bulkSaveSyncEpoch}
+                                showSaveButton={isCommented}
+                                onToggleExpand={(val) => handleToggleExpand(`exc_${tIdx}_${eIdx}_reasoning`, val)}
+                                onChange={(comment, status) => trackPendingUpdate(`exc_${tIdx}_${eIdx}_reasoning`, comment, status, {
+                                  trial_index: tIdx,
+                                  type: 'exclusion',
+                                  item_index: eIdx,
+                                  fields: { LLM_Reasoning: { comment, status, action: 'add' } }
+                                })}
+                                onSave={(comment, status, isUpdate) => handleUpdateComment({
+                                  trial_index: tIdx,
+                                  type: 'exclusion',
+                                  item_index: eIdx,
+                                  fields: { LLM_Reasoning: { comment, status, action: isUpdate ? 'update' : 'add' } }
+                                })}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}
