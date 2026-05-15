@@ -178,6 +178,8 @@ export default function PatientDetailPage() {
           {patient.data.Trials?.map((trial: any, tIdx: number) => {
             const trialComments = patient.comments?.Trials?.find((t: any) => t.trial_index === tIdx);
             const isActivePanel = activeTrialIndex === tIdx;
+            const inclusionsList = trial.Trail_text.metadata.inclusion_criteria.split(":").at(1).split("\n").map((item: string) => item.trim()).filter((item: string | any[]) => item.length > 0);
+            const exclusionsList = trial.Trail_text.metadata.exclusion_criteria.split(":").at(1).split("\n").map((item: string) => item.trim()).filter((item: string | any[]) => item.length > 0);
 
             return (
               <div
@@ -296,10 +298,10 @@ export default function PatientDetailPage() {
                     </div>
 
                     <div className={styles.criteriaList}>
-                      <h3>Inclusion Criteria Mapping</h3>
+                      {/* <h3>Inclusion Criteria Mapping</h3>
                       <div className={`${styles.criteriaBody} my-3`}>
                         <strong> Inclusion Criteria: {trial.Trail_text.metadata["inclusion_criteria"].split(":").at(1)}</strong>
-                      </div>
+                      </div> */}
                       {trial.Matching_Results.inclusion.map((item: any, iIdx: number) => {
                         const itemComments = trialComments?.inclusion?.find((i: any) => i.item_index === iIdx);
                         return (
@@ -308,6 +310,10 @@ export default function PatientDetailPage() {
                               <div className={styles.criteriaHeader}>
                                 <strong>Criterion {iIdx + 1}</strong>
                                 <div className="badge pill">{item.LLM_output}</div>
+                              </div>
+                              <div className={styles.criteriaBody}>
+                                <strong>Inclusion Criteria:</strong>
+                                <p>{inclusionsList.at(iIdx) ?? ""}</p>
                               </div>
                               <div className={styles.criteriaBody}>
                                 <strong>LLM Reasoning:</strong>
@@ -343,10 +349,10 @@ export default function PatientDetailPage() {
                     </div>
 
                     <div className={styles.criteriaList}>
-                      <h3>Exclusion Criteria Mapping</h3>
+                      {/* <h3>Exclusion Criteria Mapping</h3>
                       <div className={`${styles.criteriaBody} my-3`}>
                         <strong> Exclusion Criteria: {trial.Trail_text.metadata["exclusion_criteria"].split(":").at(1)}</strong>
-                      </div>
+                      </div> */}
                       {trial.Matching_Results.exclusion.map((item: any, eIdx: number) => {
                         const itemComments = trialComments?.exclusion?.find((e: any) => e.item_index === eIdx);
                         return (
@@ -355,6 +361,10 @@ export default function PatientDetailPage() {
                               <div className={styles.criteriaHeader}>
                                 <strong>Criterion {eIdx + 1}</strong>
                                 <div className="badge pill">{item.LLM_output}</div>
+                              </div>
+                              <div className={styles.criteriaBody}>
+                                <strong>Exclusion Criteria:</strong>
+                                <p>{exclusionsList.at(eIdx) ?? ""}</p>
                               </div>
                               <div className={styles.criteriaBody}>
                                 <strong>LLM Reasoning:</strong>
